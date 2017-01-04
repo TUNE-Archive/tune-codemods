@@ -1,89 +1,21 @@
-## chai-to-jasmine [![Build Status](https://travis-ci.org/AlexJuarez/chai-to-jasmine.svg?branch=master)](https://travis-ci.org/AlexJuarez/chai-to-jasmine)
+## tune-codemods
 
-A [jscodeshift](https://github.com/facebook/jscodeshift) codemod that transforms test files from [chai](http://chaijs.com/) to [Jasmine](https://jasmine.github.io/edge/introduction).
-
+A [jscodeshift](https://github.com/facebook/jscodeshift) codemod library that we use at tune.
 ## Install & Run
 
 ```sh
 npm install -g jscodeshift
-git clone https://github.com/AlexJuarez/chai-to-jasmine.git
-jscodeshift -t ./transforms/chai-to-jasmine <file>
+git clone https://github.com/AlexJuarez/tune-codemods.git
+jscodeshift -t ./transforms/prefer-const <file>
 ```
 
-## Supported Chai Assertions
+## Scripts
 
-- calls
-```
-keys, a, an, instanceof, lengthof, length, equal, throw,
-include, contain, eql, above, least, below, most, match,
-string, members, property, ownproperty, ownpropertydescriptor,
-gte, lte
-```
-- members
-```
-ok, true, false, null, undefined, exist, empty, nan
-```
-
-## Unsupported Chai Assertions
-```
-oneOf, change, increase, decrease
-```
-## Quirks
-
-#### `.keys`
-
-`.any` is not currently supported, e.g. the following code will not correctly be converted
-```javascript
-expect([1, 3, 4]).to.have.any.keys(1, 2);
-```
-
-##### Example Input
-```javascript
-expect([1, 2, 3]).to.have.all.keys(1, 2);
-expect({ foo: 1, bar: 2 }).to.have.all.keys({'bar': 6, 'foo': 7});
-expect({ foo: 1, bar: 2, baz: 3 }).to.contain.all.keys(['bar', 'foo']);
-expect({ foo: 1, bar: 2, baz: 3 }).to.contain.all.keys({'bar': 6});
-```
-
-##### Example Output
-```javascript
-expect([1, 2, 3]).toEqual(jasmine.arrayContaining([1, 2]));
-expect(Object.keys({ foo: 1, bar: 2 })).toEqual(jasmine.arrayContaining(Object.keys({'bar': 6, 'foo': 7})));
-expect(Object.keys({ foo: 1, bar: 2, baz: 3 })).toEqual(jasmine.arrayContaining(['bar', 'foo']));
-expect(Object.keys({ foo: 1, bar: 2, baz: 3 })).toEqual(jasmine.arrayContaining(Object.keys({'bar': 6})));
-```
-
-#### `.a|.an`
-
-The converted form uses typeof to make the type checking, some of the chai types will not be correctly checked.
-
-##### Example Input
-```javascript
-expect('test').to.be.a('string');
-expect({ foo: 'bar' }).to.be.an('object');
-expect(null).to.be.a('null');
-expect(undefined).to.be.an('undefined');
-expect(new Error).to.be.an('error');
-expect(new Promise).to.be.a('promise');
-expect(new Float32Array()).to.be.a('float32array');
-expect(Symbol()).to.be.a('symbol');
-```
-
-##### Example Output
-```javascript
-expect(typeof 'test').toBe('string');
-expect(typeof { foo: 'bar' }).toBe('object');
-expect(typeof null).toBe('null');
-expect(typeof undefined).toBe('undefined');
-expect(typeof new Error).toBe('error');
-expect(typeof new Promise).toBe('promise');
-expect(typeof new Float32Array()).toBe('float32array');
-expect(typeof Symbol()).toBe('symbol');
-```
-
-#### `.property`
-
-Does not support deeply nested property checks. The following code will not be correctly converted.
-```javascript
-expect(deepObj).to.have.deep.property('green.tea', 'matcha');
-```
+- `auto-unmock` adds jest.unmock for all imports/ requires inside of files.
+- `chai-to-jasmine` converts chai chain and should expressions to jest compatible jasmine.
+- `import-to-require` converts all import statements to require statements.
+- `mocha-mix-to-enzyme` replaces mochaMix a tune testing library with enzyme matchers.
+- `prefer-const` converts let statements that are never reassigned to const.
+- `rm-empty-beforeEach` removes empty beforeEach blocks.
+- `rm-unused-vars` removes variableDeclarations that are never used in the file.
+- `sinon-to-jasmine-spy` converts all sinon type spys to jasmine and jest
