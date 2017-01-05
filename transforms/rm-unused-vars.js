@@ -19,10 +19,11 @@ module.exports = function transformer(file, api) {
           switch (spec.type) {
             case j.ImportSpecifier.name:
               return spec.imported;
+            case j.ImportNamespaceSpecifier.name:
             case j.ImportDefaultSpecifier.name:
               return spec.local;
             default:
-              console.warn(`type ${spec.type}, not supported`);
+              console.warn(`${spec.type}: is not supported`);
           }
         };
         mutations++;
@@ -44,11 +45,18 @@ module.exports = function transformer(file, api) {
       p.value.declarations = p.value.declarations.filter(dec => {
         mutations ++;
 
-        if (dec.id.type === j.Identifier.name) {
-          return instanceCount(scope, dec.id)
-        } else {
-          dec.id.properties = dec.id.properties.filter(prop => instanceCount(scope, prop.key));
-          return dec.id.properties.length;
+        switch (dec.id.type) {
+          case j.Identifier.name:
+            return instanceCount(scope, dec.id);
+          case j.ObjectPattern.name:
+            dec.id.properties = dec.id.properties.filter(prop => prop.key && instanceCount(scope, prop.key));
+            return dec.id.properties.length;
+          case j.ArrayPattern.name:
+            dec.id.elements = dec.id.elements.filter(elem => instanceCount(scope, elem.name));
+            return dec.id.elements.length;
+          default:
+            console.warn(`${dec.id.type}: is not supported`);
+            return true;
         }
       });
 
