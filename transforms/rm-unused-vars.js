@@ -7,7 +7,7 @@ module.exports = function transformer(file, api) {
   const instanceCount = (scope, identifier) => scope
     .find(j.Identifier, { name: name => name === identifier.name })
     .filter(i => i.node !== identifier)
-    .size();
+    .size() || identifier.name === 'React';
 
   root
     .find(j.ImportDeclaration)
