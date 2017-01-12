@@ -9,6 +9,10 @@ module.exports = function transformer(file, api) {
     .filter(i => i.node !== identifier)
     .size() || identifier.name === 'React';
 
+  const isExport = (nodePath) => (nodePath.value.type === j.ExportNamedDeclaration.name ||
+    nodePath.value.type === j.ExportDefaultDeclaration.name) ||
+    (nodePath.parent != null && isExport(nodePath.parent));
+
   root
     .find(j.ImportDeclaration)
     .forEach(p => {
@@ -17,8 +21,8 @@ module.exports = function transformer(file, api) {
       p.value.specifiers = p.value.specifiers.filter(spec => {
         const getNode = (spec) => {
           switch (spec.type) {
+            // always pick the local identifier name
             case j.ImportSpecifier.name:
-              return spec.imported;
             case j.ImportNamespaceSpecifier.name:
             case j.ImportDefaultSpecifier.name:
               return spec.local;
@@ -39,6 +43,11 @@ module.exports = function transformer(file, api) {
   root
     .find(j.VariableDeclaration)
     .forEach(p => {
+      // If this is an export statement skip it.
+      if (isExport(p)) {
+        return;
+      }
+
       const pathRoot = j(p);
       const scope = pathRoot.closestScope();
 
