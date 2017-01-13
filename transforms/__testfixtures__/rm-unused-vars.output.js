@@ -1,11 +1,8 @@
 import React from 'react';
-import 'lodash/range';
 import { mount as mt } from 'enzyme';
 
 import LoadingIndicator from '../progress-indicators/LoadingIndicator';
 import SearchBox from '../input-fields/SearchBox';
-import '../lists/_SelectableItemList';
-import './TwoPanelSelector';
 
 const VALUE = 'search value';
 const HEADER = (<div className="header">a header</div>);
@@ -25,9 +22,7 @@ function Items1() {
 }
 
 function Items2() {
-  const {
-    item
-  } = { item: 1, two: 2};
+  const { item, two } = { item: 1, two: 2};
 
   item;
 }

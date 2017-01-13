@@ -1,5 +1,21 @@
+const parser = require('babel-eslint');
+
 module.exports = function transformer(file, api) {
-  const j = api.jscodeshift;
+  const { types } = api.jscodeshift;
+  const { def } = types.Type;
+  if (!def('ExperimentalRestProperty').finalized) {
+    def('ExperimentalRestProperty')
+      .bases('Node')
+      .build('argument')
+      .field('argument', def('Expression'));
+    def('ExperimentalSpreadProperty')
+      .bases('Node')
+      .build('argument')
+      .field('argument', def('Expression'));
+    types.finalize();
+  }
+
+  const j = api.jscodeshift.withParser(parser);
   const root = j(file.source);
 
   let mutations = 0;
@@ -28,6 +44,10 @@ module.exports = function transformer(file, api) {
       if (specifiers.length !== p.value.specifiers.length) {
         p.value.specifiers = specifiers;
         mutations++;
+      }
+
+      if (!specifiers.length) {
+        p.prune();
       }
     });
 
@@ -107,7 +127,5 @@ module.exports = function transformer(file, api) {
       }
     });
 
-  return mutations ? root.toSource() + "\n" : null;
+  return mutations ? root.toSource() : null;
 };
-
-module.exports.parser = 'babylon';
