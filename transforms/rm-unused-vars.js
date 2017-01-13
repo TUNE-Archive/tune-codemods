@@ -4,10 +4,13 @@ module.exports = function transformer(file, api) {
 
   let mutations = 0;
 
-  const instanceCount = (scope, identifier) => scope
-    .find(j.Identifier, { name: name => name === identifier.name })
-    .filter(i => i.node !== identifier)
-    .size() || identifier.name === 'React';
+  const instanceCount = (scope, identifier, filter = () => true) => {
+    const count = scope
+      .find(j.Identifier, { name: name => name === identifier.name })
+      .filter(i => i.node !== identifier && filter(i))
+      .size();
+    return count || identifier.name === 'React';
+  };
 
   const isExport = (nodePath) => (nodePath.value.type === j.ExportNamedDeclaration.name ||
     nodePath.value.type === j.ExportDefaultDeclaration.name) ||
@@ -19,25 +22,9 @@ module.exports = function transformer(file, api) {
       const scope = j(p).closestScope();
 
       p.value.specifiers = p.value.specifiers.filter(spec => {
-        const getNode = (spec) => {
-          switch (spec.type) {
-            // always pick the local identifier name
-            case j.ImportSpecifier.name:
-            case j.ImportNamespaceSpecifier.name:
-            case j.ImportDefaultSpecifier.name:
-              return spec.local;
-            default:
-              console.warn(`${spec.type}: is not supported`);
-          }
-        };
         mutations++;
-        return instanceCount(scope, getNode(spec));
+        return instanceCount(scope, spec.local);
       });
-
-      if (!p.value.specifiers.length) {
-        mutations++;
-        p.prune();
-      }
     });
 
   root
@@ -51,17 +38,57 @@ module.exports = function transformer(file, api) {
       const pathRoot = j(p);
       const scope = pathRoot.closestScope();
 
+      const filterArray = (arr) => {
+        const elements = arr.filter(elem => instanceCount(scope, elem));
+
+        if (elements.some((elem, i) => arr[i] !== elem)) {
+          return arr;
+        }
+
+        return elements;
+      };
+
       p.value.declarations = p.value.declarations.filter(dec => {
         mutations ++;
+
+        function filterParent(node) {
+          let result = true;
+          j(node).closest(j.VariableDeclaration).forEach((p1) => {
+            result = p1 !== p;
+          });
+          return result;
+        }
 
         switch (dec.id.type) {
           case j.Identifier.name:
             return instanceCount(scope, dec.id);
           case j.ObjectPattern.name:
-            dec.id.properties = dec.id.properties.filter(prop => prop.key && instanceCount(scope, prop.key));
+            // if properties contains rest do not remove properties before the rest
+            if (dec.id.properties.some((prop) => prop.type === j.RestProperty.name)) {
+              dec.id.properties = dec.id.properties.filter(prop => {
+                switch (prop.type) {
+                  case j.RestProperty.name:
+                    return instanceCount(scope, prop.argument, filterParent);
+                  default:
+                    return true;
+                }
+              });
+            } else {
+              dec.id.properties = dec.id.properties.filter(prop => {
+                switch (prop.type) {
+                  case j.ObjectProperty.name:
+                    if (prop.value.type === j.Identifier.name) {
+                      return instanceCount(scope, prop.value, filterParent);
+                    }
+                    return instanceCount(scope, prop.key, filterParent);
+                  default:
+                    return true;
+                }
+              });
+            }
             return dec.id.properties.length;
           case j.ArrayPattern.name:
-            dec.id.elements = dec.id.elements.filter(elem => instanceCount(scope, elem.name));
+            dec.id.elements = filterArray(dec.id.elements);
             return dec.id.elements.length;
           default:
             console.warn(`${dec.id.type}: is not supported`);
@@ -71,9 +98,12 @@ module.exports = function transformer(file, api) {
 
       if (!p.value.declarations.length) {
         mutations++;
+
         p.prune();
       }
     });
 
   return mutations ? root.toSource() : null;
 };
+
+module.exports.parser = 'babylon';
