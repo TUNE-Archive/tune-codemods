@@ -21,10 +21,14 @@ module.exports = function transformer(file, api) {
     .forEach(p => {
       const scope = j(p).closestScope();
 
-      p.value.specifiers = p.value.specifiers.filter(spec => {
-        mutations++;
+      const specifiers = p.value.specifiers.filter(spec => {
         return instanceCount(scope, spec.local);
       });
+
+      if (specifiers.length !== p.value.specifiers.length) {
+        p.value.specifiers = specifiers;
+        mutations++;
+      }
     });
 
   root
@@ -48,9 +52,7 @@ module.exports = function transformer(file, api) {
         return elements;
       };
 
-      p.value.declarations = p.value.declarations.filter(dec => {
-        mutations ++;
-
+      const declarations = p.value.declarations.filter(dec => {
         function filterParent(node) {
           let result = true;
           j(node).closest(j.VariableDeclaration).forEach((p1) => {
@@ -96,10 +98,12 @@ module.exports = function transformer(file, api) {
         }
       });
 
-      if (!p.value.declarations.length) {
+      if (!declarations.length) {
         mutations++;
-
         p.prune();
+      } else if (declarations.length !== p.value.declarations.length) {
+        mutations++;
+        p.value.declarations = declarations;
       }
     });
 
