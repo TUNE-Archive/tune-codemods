@@ -107,7 +107,7 @@ module.exports = function transformer(file, api) {
       }
     });
 
-  return mutations ? root.toSource() : null;
+  return mutations ? root.toSource() + "\n" : null;
 };
 
 module.exports.parser = 'babylon';
