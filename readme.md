@@ -20,3 +20,4 @@ jscodeshift -t ./transforms/prefer-const <file>
 - `rm-unused-vars` removes variableDeclarations that are never used in the file.
 - `sinon-to-jasmine-spy` converts all sinon type spys to jasmine and jest
 - `sort-keys` sorts all of the keys in object in ascending order.
+- `order-imports` sorts all the imports by rules laid out in [eslint-plugin-import/order](https://github.com/benmosher/eslint-plugin-import/blob/master/docs/rules/order.md)

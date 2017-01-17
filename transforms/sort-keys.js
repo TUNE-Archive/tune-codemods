@@ -1,4 +1,3 @@
-const assert = require('assert');
 const parser = require('babel-eslint');
 const addTypes = require('./helpers/add-types');
 
@@ -48,6 +47,8 @@ module.exports = function transformer(file, api) {
       value.properties = sorted;
     }
   });
+
+  root.find(j.Program).get('body')
 
   return mutations ? root.toSource() : null;
 };

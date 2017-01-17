@@ -23,5 +23,11 @@
     "jest": "^18.1.0",
     "jest-cli": "^18.1.0",
     "jscodeshift": "^0.3.30"
+  },
+  "devDependencies": {
+    "builtin-modules": "^1.1.1",
+    "enhanced-resolve": "^3.0.3",
+    "eslint": "^3.13.1",
+    "lodash.flattendeep": "^4.4.0"
   }
 }
