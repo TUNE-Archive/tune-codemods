@@ -1,20 +1,8 @@
 const parser = require('babel-eslint');
+const addTypes = require('./helpers/add-types');
 
 module.exports = function transformer(file, api) {
-  const { types } = api.jscodeshift;
-  const { def } = types.Type;
-  if (!def('ExperimentalRestProperty').finalized) {
-    def('ExperimentalRestProperty')
-      .bases('Node')
-      .build('argument')
-      .field('argument', def('Expression'));
-    def('ExperimentalSpreadProperty')
-      .bases('Node')
-      .build('argument')
-      .field('argument', def('Expression'));
-    types.finalize();
-  }
-
+  addTypes(api);
   const j = api.jscodeshift.withParser(parser);
   const root = j(file.source);
 
