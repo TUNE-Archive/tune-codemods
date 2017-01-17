@@ -7,8 +7,22 @@ const importType = require('./helpers/resolve-imports');
 
 const tuneModules = ['txl/', 'tune'];
 
-function isEqual(arr1, arr2) {
-  return (arr1.length === arr2.length) && !arr1.some((o, i) => arr2[i] !== o);
+function getOutput(imports) {
+  let output = '';
+  let prev = imports[0];
+  imports.forEach(info => {
+    if (info.rank !== prev.rank) {
+      output += EOL;
+    }
+
+    output += info.path.toSource().trim() + EOL;
+    prev = info;
+  });
+  return output;
+}
+
+function isEqual(imports, sortedImports) {
+  return getOutput(imports) === getOutput(sortedImports)
 }
 
 function isTuneModule(name) {
