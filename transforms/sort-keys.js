@@ -1,3 +1,4 @@
+const assert = require('assert');
 const parser = require('babel-eslint');
 const addTypes = require('./helpers/add-types');
 
@@ -12,19 +13,36 @@ module.exports = function transformer(file, api) {
 
   let mutations = 0;
 
+  const getValue = node => {
+    switch (node.key.type) {
+      case j.Identifier.name:
+        return node.key.name;
+      case j.Literal.name:
+        return node.key.raw;
+    }
+
+    return '';
+  };
+
   root.find(j.ObjectExpression).forEach(p => {
     const { value } = p;
     const sorted = value.properties
-      .filter(prop => prop.key != null && prop.key.type === j.Identifier.name)
-      .sort((a, b) => a.key.name.localeCompare(b.key.name));
+      .filter(prop => prop.key != null &&
+        (prop.key.type === j.Identifier.name || prop.key.type === j.Literal.name))
+      .sort((a, b) => getValue(a).localeCompare(getValue(b)));
 
     value.properties
       .forEach((prop, i) => {
-        if (prop.key == null || prop.key.type !== j.Identifier.name) {
+        if (prop.key == null || [j.Identifier.name, j.Literal.name].indexOf(prop.key.type) === -1) {
           sorted.splice(i, 0, prop);
         }
       });
 
+    if (value.properties.length !== sorted.length) {
+      console.log(value.properties.filter(n => n).map(getValue));
+      console.log(sorted.filter(n => n).map(getValue));
+    }
+    
     if (!isEqual(value.properties, sorted)) {
       mutations++;
       value.properties = sorted;

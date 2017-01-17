@@ -32,6 +32,7 @@ export function settingsReducer(state = initialState, action) {
     case CHANGE_LANGUAGE:
       return state.merge({
         language: action.language,
+        'atest': 'test'
       });
 
     case GET_BRAND_SETTINGS.begin:
