@@ -28,7 +28,20 @@ module.exports = function transformer(file, api) {
     const sorted = value.properties
       .filter(prop => prop.key != null &&
         (prop.key.type === j.Identifier.name || prop.key.type === j.Literal.name))
-      .sort((a, b) => getValue(a).localeCompare(getValue(b)));
+      .sort((a, b) => {
+        // align sort with eslint sort-keys
+        const valA = getValue(a);
+        const valB = getValue(b);
+        if (valA > valB) {
+          return 1;
+        }
+
+        if (valA < valB) {
+          return -1;
+        }
+
+        return 0;
+      });
 
     value.properties
       .forEach((prop, i) => {
