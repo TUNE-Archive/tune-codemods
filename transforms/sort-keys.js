@@ -17,7 +17,7 @@ module.exports = function transformer(file, api) {
       case j.Identifier.name:
         return node.key.name;
       case j.Literal.name:
-        return node.key.raw;
+        return typeof node.key.value === 'string' ? node.key.value : node.key.raw;
     }
 
     return '';
@@ -47,8 +47,6 @@ module.exports = function transformer(file, api) {
       value.properties = sorted;
     }
   });
-
-  root.find(j.Program).get('body')
 
   return mutations ? root.toSource() : null;
 };

@@ -75,7 +75,7 @@ module.exports = function transformer(file, api) {
 
   let imports = [];
 
-  const groups = importType.getGroups(file.filename);
+  const groups = importType.getGroups(file.filename).reverse();
 
   root.find(j.ImportDeclaration).forEach(p => {
     const { source } = p.value;
