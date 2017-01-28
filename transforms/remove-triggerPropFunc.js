@@ -1,5 +1,11 @@
-export default (fileInfo, api) => {
-  const j = api.jscodeshift;
+const parser = require('babel-eslint');
+const addTypes = require('./helpers/add-types');
+const util = require('./util');
+
+module.exports = function transform(fileInfo, api) {
+  addTypes(api);
+  const j = api.jscodeshift.withParser(parser);
+  const createCallChain = util.createCallChain(j);
   const root = j(fileInfo.source);
 
   const triggerPropFuncCalls = root.find(j.CallExpression, {
@@ -17,7 +23,7 @@ export default (fileInfo, api) => {
 
   // Don't need to continue because if there's no calls to _triggerPropFunc
   if (!triggerPropFuncCalls.length) {
-    return root.toSource({ quote: 'single', trailingComma: true });
+    return null;
   }
 
   const componentName = root.find(j.ClassDeclaration).get(0).node.id.name;
@@ -126,50 +132,20 @@ export default (fileInfo, api) => {
     const [ propFuncName, propFuncArguments = emptyObjectNode ] = node.arguments;
 
     const defaultPropsValue = getDefaultPropValueForProp(propFuncName.value);
-    let newNode;
+
+    const args = [propFuncArguments];
+    const callChain = ['this', 'props', propFuncName.value];
 
     // If there's a default prop value that's not NOOP, we need to call apply(this, args) on the prop func
     // instead of just calling it directly
     if (defaultPropsValue && defaultPropsValue.name !== 'NOOP') {
-      newNode = j.expressionStatement(
-        j.callExpression(
-          j.memberExpression(
-            j.memberExpression(
-              j.memberExpression(
-                j.thisExpression(),
-                j.identifier('props'),
-                false,
-              ),
-              j.identifier(propFuncName.value),
-              false,
-            ),
-            j.identifier('apply'),
-            false,
-          ),
-          [j.thisExpression(), j.arrayExpression([propFuncArguments])]
-        )
-      );
-    } else {
-      newNode = j.expressionStatement(
-        j.callExpression(
-          j.memberExpression(
-            j.memberExpression(
-              j.thisExpression(),
-              j.identifier('props'),
-              false,
-            ),
-            j.identifier(propFuncName.value),
-            false,
-          ),
-          [propFuncArguments]
-        )
-      );
+      callChain.push('apply');
+      const currentArgs = args.pop();
+      args.push(j.thisExpression(), j.arrayExpression([currentArgs]));
     }
 
-    return newNode;
+    return createCallChain(callChain, args);
   });
 
   return root.toSource({ quote: 'single', trailingComma: true });
 };
-
-module.exports.parser = 'babylon';

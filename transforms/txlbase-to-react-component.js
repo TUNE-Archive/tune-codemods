@@ -1,5 +1,9 @@
-export default (fileInfo, api) => {
-  const j = api.jscodeshift;
+const parser = require('babel-eslint');
+const addTypes = require('./helpers/add-types');
+
+module.exports = function transformer(fileInfo, api) {
+  addTypes(api);
+  const j = api.jscodeshift.withParser(parser);
   const root = j(fileInfo.source);
 
   const superClassImport = root.find(j.ImportDeclaration, {
@@ -12,13 +16,14 @@ export default (fileInfo, api) => {
     }]
   });
 
-  if (superClassImport.length) {
-    superClassImport.find(j.ImportDefaultSpecifier).remove();
+  // If it doesn't have TxlBase imported, there's nothing to do
+  if(!superClassImport.length) { return null; }
 
-    // Remove the rest of the import if TxlBase was the only thing being imported
-    if (!superClassImport.get(0).node.specifiers.length) {
-      superClassImport.remove();
-    }
+  superClassImport.find(j.ImportDefaultSpecifier).remove();
+
+  // Remove the rest of the import if TxlBase was the only thing being imported
+  if (!superClassImport.get(0).node.specifiers.length) {
+    superClassImport.remove();
   }
 
   const superClass = root.find(j.ClassDeclaration, {
@@ -37,5 +42,3 @@ export default (fileInfo, api) => {
 
   return root.toSource({ quote: 'single', trailingComma: true });
 };
-
-module.exports.parser = 'babylon';
