@@ -117,13 +117,38 @@ module.exports = function transform(fileInfo, api) {
   // Sort the default props by name since we added some and they are likely no longer sorted
   if (didAddNewDefaultProps) {
     defaultPropsNodes.sort((a, b) => {
-      const aName = a.type === 'SpreadProperty' ? `...${a.argument.object.name}` : a.key.name;
-      const bName = b.type === 'SpreadProperty' ? `...${b.argument.object.name}` : b.key.name;
+      const aName = a.type === 'ExperimentalSpreadProperty' ? `...${a.argument.object.name}` : a.key.name;
+      const bName = b.type === 'ExperimentalSpreadProperty' ? `...${b.argument.object.name}` : b.key.name;
 
       if (aName < bName) { return -1; }
       if (aName > bName) { return 1; }
       return 0;
     });
+
+    const noopImport = root.find(j.ImportSpecifier, {
+      imported: {
+        type: 'Identifier',
+        name: 'NOOP',
+      }
+    });
+
+    // Add import for NOOP if it isn't currently imported since it was added as a default prop
+    if(!noopImport.length) {
+      const baseImport = root.find(j.ImportDeclaration, {
+        source: {
+          type: 'Literal',
+          value: (val) => val.match(/.*\/base\/Base/),
+        }
+      });
+
+      if (baseImport.length) {
+        baseImport.nodes()[0].specifiers.push(
+          j.importSpecifier(
+            j.identifier('NOOP')
+          )
+        );
+      }
+    }
   }
 
   triggerPropFuncCalls.replaceWith(nodePath => {

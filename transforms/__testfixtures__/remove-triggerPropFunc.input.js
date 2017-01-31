@@ -7,7 +7,7 @@ import {
   DROPDOWN_CONTAINER_STYLE,
   DROPDOWN_CONTENT_STYLE,
 } from './DatePicker.style';
-import { autobind, NOOP } from '../base/Base';
+import { autobind } from '../base/Base';
 import Calendar from '../calendar-picker/_SingleCalendarPicker';
 import DropdownContent from '../dropdowns/_DropdownContentWithArrow';
 import IconButton from '../buttons/IconButton';
